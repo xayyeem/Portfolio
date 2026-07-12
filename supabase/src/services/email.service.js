@@ -1,8 +1,3 @@
-import nodemailer from "nodemailer";
-import dns from "node:dns";
-
-dns.setDefaultResultOrder("ipv4first");
-
 export const sendContactNotification = async ({
   name,
   email,
@@ -11,23 +6,37 @@ export const sendContactNotification = async ({
   budgetRange,
   message,
 }) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_APP_PASSWORD?.replace(/\s/g, ""),
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.EMAIL_APP_PASSWORD}`,
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      from: process.env.FROM_EMAIL,
+      to: [process.env.NOTIFY_EMAIL],
+      reply_to: email,
+      subject: `New Contact Form Submission from ${name}`,
+      html: `
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        ${company ? `<p><strong>Company:</strong> ${company}</p>` : ""}
+        ${projectType ? `<p><strong>Project Type:</strong> ${projectType}</p>` : ""}
+        ${budgetRange ? `<p><strong>Budget:</strong> ${budgetRange}</p>` : ""}
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, "<br>")}</p>
+      `,
+    }),
   });
 
-  const info = await transporter.sendMail({
-    from: `"Portfolio" <${process.env.EMAIL_USER}>`,
-    to: process.env.NOTIFY_EMAIL,
-    replyTo: email,
-    subject: `New Contact Form Submission from ${name}`,
-    text: message,
-  });
+  const data = await response.json();
 
-  console.log("Email sent:", info.messageId);
+  if (!response.ok) {
+    console.error("Resend error:", data);
+    throw new Error(data.message || "Failed to send email");
+  }
+
+  console.log("Email sent successfully:", data);
+  return data;
 };
