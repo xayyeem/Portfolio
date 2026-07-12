@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-
+import authRoutes from "./routes/authRoutes.js";
 import contactRoutes from "./routes/contact.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 
@@ -39,7 +39,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/contact", contactRoutes);
-
+app.use("/api/auth", authRoutes);
 app.use(errorHandler);
 
 export default app;
