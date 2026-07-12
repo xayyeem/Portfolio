@@ -6,7 +6,7 @@ import contactRoutes from "./routes/contact.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
-// app.set("trust proxy", 1);
+app.set("trust proxy", 1);
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
