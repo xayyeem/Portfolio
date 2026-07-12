@@ -8,36 +8,53 @@ export const sendContactNotification = async ({
   budgetRange,
   message,
 }) => {
-  console.log("Email credentials:", {
-    user: !!process.env.EMAIL_USER,
-    password: !!process.env.EMAIL_APP_PASSWORD,
-  });
+  console.log("Starting email send...");
 
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_APP_PASSWORD,
+      pass: process.env.EMAIL_APP_PASSWORD?.replace(/\s/g, ""),
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 
-  const info = await transporter.sendMail({
-    from: `"Portfolio" <${process.env.EMAIL_USER}>`,
-    to: process.env.NOTIFY_EMAIL,
-    replyTo: email,
-    subject: `New Contact Form Submission from ${name}`,
-    html: `
-      <h2>New Contact Form Submission</h2>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      ${company ? `<p><strong>Company:</strong> ${company}</p>` : ""}
-      ${projectType ? `<p><strong>Project Type:</strong> ${projectType}</p>` : ""}
-      ${budgetRange ? `<p><strong>Budget:</strong> ${budgetRange}</p>` : ""}
-      <p><strong>Message:</strong></p>
-      <p>${message.replace(/\n/g, "<br>")}</p>
-    `,
-  });
+  try {
+    console.log("Verifying SMTP...");
+    await transporter.verify();
+    console.log("SMTP verified successfully");
 
-  console.log("Email sent successfully:", info.messageId);
-  return info;
+    const info = await transporter.sendMail({
+      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
+      to: process.env.NOTIFY_EMAIL,
+      replyTo: email,
+      subject: `New Contact Form Submission from ${name}`,
+      text: `
+Name: ${name}
+Email: ${email}
+Company: ${company || "N/A"}
+Project Type: ${projectType || "N/A"}
+Budget: ${budgetRange || "N/A"}
+
+Message:
+${message}
+      `,
+    });
+
+    console.log("EMAIL RESULT:", {
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response,
+    });
+
+    return info;
+  } catch (error) {
+    console.error("EMAIL SEND FAILED:", error);
+    throw error;
+  }
 };
