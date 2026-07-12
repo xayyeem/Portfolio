@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 export const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    console.log("Login request received:", { email });
     const admin = await Admin.findOne({ email });
 
     if (!admin) {
